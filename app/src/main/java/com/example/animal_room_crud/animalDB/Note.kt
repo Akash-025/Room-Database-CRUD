@@ -8,6 +8,8 @@ data class Note(
     var noteName: String,
     var noteBody: String,
     var imageUri: String,
+    var selectedItem : String,
     @PrimaryKey(autoGenerate = true)
     var noteId : Int = 0
+
 )

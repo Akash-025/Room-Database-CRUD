@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.animal_room_crud"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.animal_room_crud"
@@ -79,8 +79,15 @@ dependencies {
 
     // Coil for Image Loading
     implementation("io.coil-kt:coil-compose:2.4.0")
+    //Runtime permission for storage
+    implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
 
     //Nagivation
     implementation("androidx.navigation:navigation-compose:2.7.1")
+
+    //Material 3
+    implementation("androidx.compose.material3:material3:1.3.1")
+    implementation("androidx.compose.material3:material3-window-size-class:1.3.1")
+    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha05")
 
 }

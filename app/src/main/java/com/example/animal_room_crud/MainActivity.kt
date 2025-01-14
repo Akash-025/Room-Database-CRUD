@@ -1,5 +1,7 @@
 package com.example.animal_room_crud
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -25,8 +27,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+//import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,6 +38,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,11 +59,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
 import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
+import com.example.animal_room_crud.CategorySpinner.CategorySpinner
+//import com.example.animal_room_crud.CatergorySpinner
 import com.example.animal_room_crud.animalDB.Note
 import com.example.animal_room_crud.animalDB.NoteDatabase
 import com.example.animal_room_crud.ui.theme.Animal_Room_CRUDTheme
 import com.example.animal_room_crud.viewModel.NoteViewModel
 import com.example.animal_room_crud.viewModel.Repository
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 
 class MainActivity : ComponentActivity() {
 
@@ -82,6 +92,7 @@ class MainActivity : ComponentActivity() {
     )
 
 
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -110,19 +121,36 @@ class MainActivity : ComponentActivity() {
                         mutableStateOf<Uri?>(null)
                     }
 
-                    val photoPickerLauncher = rememberLauncherForActivityResult(
+                    var selectedItem by remember {
+                        mutableStateOf("")
+                    }
+
+
+                    @OptIn(ExperimentalPermissionsApi::class)
+                    val storagePermissionState = rememberPermissionState(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
+//
+//                    var photoPickerLauncher = rememberLauncherForActivityResult(
+//                        contract = ActivityResultContracts.GetContent()){
+//                            uri: Uri? ->
+//                        selectedImageUri = uri
+//                    }
+
+                    var photoPickerLauncher = rememberLauncherForActivityResult(
                         contract = ActivityResultContracts.PickVisualMedia(),
                         onResult = {
                             selectedImageUri = it
                         }
                     )
+
+
 //end
 
 
-                    val note = Note(
+                    var note = Note(
                         name,
                         body,
-                        selectedImageUri.toString()
+                        selectedImageUri.toString(),
+                        selectedItem
                     )
                     var noteList by remember {
                         mutableStateOf(listOf<Note>())
@@ -130,6 +158,10 @@ class MainActivity : ComponentActivity() {
                     viewModel.getNotes().observe(this) {
                         noteList = it
                     }
+//                    //optional
+
+
+
                     Column(
                         Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -143,18 +175,31 @@ class MainActivity : ComponentActivity() {
                                 textAlign = TextAlign.Center
 
                             ),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().padding(top =15.dp)
 
                         )
-                        OutlinedTextField(value = name, onValueChange = {
-                            name = it
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
 
-                        },
-                            label = {
-                                Text(text = "Name")
-                            },
-                            modifier = Modifier.width(200.dp)
-                        )
+
+                        ) {
+
+
+                            OutlinedTextField(
+                                value = name, onValueChange = {
+                                    name = it
+
+                                },
+                                label = {
+                                    Text(text = "Name")
+                                },
+                                modifier = Modifier.width(120.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            CategorySpinner(selectedItem = selectedItem,
+                                onItemSelected = { selectedItem = it })
+
+                        }
                         //Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(value = body, onValueChange = {
                             body = it
@@ -178,14 +223,17 @@ class MainActivity : ComponentActivity() {
                                     photoPickerLauncher.launch(
                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                     )
+                                    storagePermissionState.launchPermissionRequest()
                                 },
                                 modifier = Modifier
-                                    .width(150.dp),
+                                    .width(150.dp)
+                                    .height(56.dp)
+                                ,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Row {
-                                    Icon(imageVector = Icons.Default.Add, contentDescription ="" ,
-                                        modifier = Modifier.size(32.dp))
+//                                    Icon(imageVector = Icons.Default.Add, contentDescription ="" ,
+//                                        modifier = Modifier.size(32.dp))
                                     Text(
 
                                         text = "Upload Photo"
@@ -213,11 +261,12 @@ class MainActivity : ComponentActivity() {
                                 //viewModel.insertAnimal(animal)
                                 if(selectedImageUri != null && name.isNotBlank() && body.isNotBlank()){
 
-                                    val node = Note(
+                                    var node = Note(
                                         noteId = selectedNote?.noteId ?: 0,
                                         noteName = name,
                                         noteBody = body,
-                                        imageUri = selectedImageUri.toString()
+                                        imageUri = selectedImageUri.toString(),
+                                        selectedItem = selectedItem
                                     )
                                     if (isUpdate) {
                                         // Update Note
@@ -229,6 +278,7 @@ class MainActivity : ComponentActivity() {
                                         name = ""
                                         body = ""
                                         selectedImageUri = null
+                                        selectedItem = ""
                                     }
                                     else{
                                         viewModel.upsertNote(note)
@@ -236,6 +286,7 @@ class MainActivity : ComponentActivity() {
                                         name = ""
                                         body = ""
                                         selectedImageUri = null
+                                        selectedItem = ""
                                     }
 
 
@@ -248,7 +299,9 @@ class MainActivity : ComponentActivity() {
 
 
                             },
-                                modifier = Modifier.width(200.dp).height(56.dp),
+                                modifier = Modifier
+                                    .width(200.dp)
+                                    .height(56.dp),
                                 shape = RoundedCornerShape(8.dp)
                             )
 
@@ -309,6 +362,8 @@ class MainActivity : ComponentActivity() {
                                             Spacer(modifier = Modifier.width(20.dp))
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(text = "Name: ${note.noteName}")
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text(text = "Category: ${note.selectedItem}")
                                                 Spacer(modifier = Modifier.height(6.dp))
                                                 Text(text = "Description: ${note.noteBody}")
                                             }
@@ -387,19 +442,21 @@ class MainActivity : ComponentActivity() {
 }
 
 
+@SuppressLint("SuspiciousIndentation")
 @Composable
 fun ImageFromUri(uri: Uri) {
-    val painter: Painter = rememberAsyncImagePainter(model = uri)
+    var painter: Painter = rememberAsyncImagePainter(model = uri)
 
-    Image(
-        painter = painter,
-        contentDescription = null,
-        modifier = Modifier
-            .size(100.dp)
-            .clip(RoundedCornerShape(8.dp))
-        ,
-        contentScale = ContentScale.Crop
-    )
+
+        Image(
+            painter = painter,
+            contentDescription = null,
+            modifier = Modifier
+                .size(100.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
+
 }
 
 
