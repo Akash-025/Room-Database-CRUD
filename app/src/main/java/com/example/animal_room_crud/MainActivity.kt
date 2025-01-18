@@ -1,5 +1,6 @@
 package com.example.animal_room_crud
 
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.net.Uri
@@ -13,8 +14,10 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,9 +33,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material.icons.Icons
 //import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -43,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -55,12 +61,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import com.example.animal_room_crud.CategorySpinner.CategorySpinner
+import com.example.animal_room_crud.CatergorySpinner.SimplePopupExample
 //import com.example.animal_room_crud.CatergorySpinner
 import com.example.animal_room_crud.animalDB.Note
 import com.example.animal_room_crud.animalDB.NoteDatabase
@@ -70,6 +79,7 @@ import com.example.animal_room_crud.viewModel.Repository
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+
 
 class MainActivity : ComponentActivity() {
 
@@ -103,7 +113,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF094675)
                 ) {
-                    //var id  = 0
+
                     var selectedNote by remember { mutableStateOf<Note?>(null) }
 
                     var isUpdate by remember {
@@ -124,6 +134,8 @@ class MainActivity : ComponentActivity() {
                     var selectedItem by remember {
                         mutableStateOf("")
                     }
+
+
 
 
                     @OptIn(ExperimentalPermissionsApi::class)
@@ -161,11 +173,19 @@ class MainActivity : ComponentActivity() {
 //                    //optional
 
 
+                    //PopUp
+
+
+
 
                     Column(
                         Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+
+                        //PopUp
+
+
 
                         Text(
                             text = "Animal Details",
@@ -175,7 +195,9 @@ class MainActivity : ComponentActivity() {
                                 textAlign = TextAlign.Center
 
                             ),
-                            modifier = Modifier.fillMaxWidth().padding(top =15.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 15.dp)
 
                         )
                         Row(
@@ -317,22 +339,27 @@ class MainActivity : ComponentActivity() {
 
                         }
 
+                        AsyncImage(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+
+                            model = selectedImageUri,
+                            contentDescription = null)
 
 
-//                        Button(onClick = {
-//                            viewModel.upsertNote(note)
-//                        }) {
-//                            Text(text = "set data")
-//                        }
-//                        TextField(value = name, onValueChange = {name = it}, placeholder = { Text(
-//                            text = "name"
-//                        )})
-//                        TextField(value = body, onValueChange = {body = it}, placeholder = { Text(
-//                            text = "body"
-//                        )})
+
+
 
                         LazyColumn {
                             items(noteList) { note ->
+
+                                //PopUp
+                                var showPopup by remember { mutableStateOf(true) }
+                                //Check
+                                var check by remember {mutableStateOf(false)}
+
                                 Column(Modifier.clickable {
                                     //viewModel.deleteNote(note)
                                 }) {
@@ -381,8 +408,10 @@ class MainActivity : ComponentActivity() {
                                                     //id = note.noteId
                                                     name = note.noteName
                                                     body = note.noteBody
+                                                    selectedItem = note.selectedItem
                                                     selectedImageUri = Uri.parse(note.imageUri)
                                                     selectedNote = note
+
                                                     //viewModel.updateNote(note)
 
                                                     isUpdate = true
@@ -400,10 +429,18 @@ class MainActivity : ComponentActivity() {
 
                                             Button(
 
+//                                                onClick = {
+//                                                    val context = this@MainActivity
+//                                                    viewModel.deleteNote(note)
+//                                                    Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+//
+//                                                },
+
                                                 onClick = {
-                                                    val context = this@MainActivity
-                                                    viewModel.deleteNote(note)
-                                                    Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+
+
+                                                    check = true
+                                                    showPopup = true
 
                                                 },
                                                 modifier = Modifier,
@@ -412,6 +449,93 @@ class MainActivity : ComponentActivity() {
 
                                                 Text(text = "Delete")
 
+
+                                            }
+                                            if(check){
+                                                if (showPopup) {
+
+
+
+                                                        Popup(
+                                                            alignment = Alignment.Center,
+                                                            onDismissRequest = {
+                                                                showPopup = false
+                                                            },
+
+                                                            ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(200.dp)
+                                                                    .background(
+                                                                        Color.White,
+                                                                        shape = RoundedCornerShape(
+                                                                            12.dp
+                                                                        )
+                                                                    )
+                                                                    //.clickable { showPopup = false } // Close the popup when clicked
+                                                                    .padding(16.dp)
+                                                            ) {
+                                                                Column {
+                                                                    Text(
+                                                                        text = "Do you want to delete?",
+                                                                        style = MaterialTheme.typography.bodyLarge,
+                                                                        //modifier = Modifier.align(Alignment.Center)
+                                                                    )
+                                                                    Spacer(
+                                                                        modifier = Modifier.height(
+                                                                            12.dp
+                                                                        )
+                                                                    )
+                                                                    Row {
+                                                                        Button(
+                                                                            onClick = {
+
+                                                                                check = false
+                                                                                showPopup = false
+
+                                                                                val context =
+                                                                                    this@MainActivity
+                                                                                viewModel.deleteNote(
+                                                                                    note
+                                                                                )
+                                                                                Toast.makeText(
+                                                                                    context,
+                                                                                    "Deleted successfully",
+                                                                                    Toast.LENGTH_SHORT
+                                                                                ).show()
+                                                                            },
+                                                                            colors = ButtonDefaults.buttonColors(
+                                                                                containerColor = Color.Red
+                                                                            )
+                                                                        ) {
+                                                                            Text(text = "YES")
+
+                                                                        }
+                                                                        Spacer(
+                                                                            modifier = Modifier.width(
+                                                                                12.dp
+                                                                            )
+                                                                        )
+                                                                        Button(
+                                                                            onClick = {
+                                                                                showPopup = false
+                                                                            },
+                                                                            colors = ButtonDefaults.buttonColors(
+                                                                                containerColor = Color.Green
+                                                                            )
+                                                                        ) {
+                                                                            Text(text = "NO")
+
+                                                                        }
+                                                                    }
+
+                                                                }
+
+                                                            }
+
+                                                        //check = false
+                                                    }
+                                                }
 
                                             }
 
@@ -432,6 +556,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+
+//
 
                     }
                 }
